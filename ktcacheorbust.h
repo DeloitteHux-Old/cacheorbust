@@ -39,6 +39,7 @@ namespace cob {
 
       std::string _host;
       int32_t _port;
+      std::string _url_prefix;
       uint32_t _server_threads;
       uint32_t _fetcher_threads;
       uint32_t _ttl;
@@ -130,6 +131,10 @@ namespace cob {
               const std::vector<std::string>& tokens, kt::TimedDB* db);
           bool do_stats(kt::ThreadedServer* serv, kt::ThreadedServer::Session* sess,
               const std::vector<std::string>& tokens, kt::TimedDB* db);
+
+          std::string b64decode(const void* data, const size_t len);
+          std::string b64decode(const std::string& str64);
+
       };
   };
 };
