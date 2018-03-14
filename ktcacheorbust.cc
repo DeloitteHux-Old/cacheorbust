@@ -179,6 +179,10 @@ bool CacheOrBust::Worker::do_get(
     return sess->printf("CLIENT_ERROR extra data after TTL\r\n");
 
   std::string key(tokens[1]);
+  if (! key.compare(0, 4, "ias:")) {
+    // Strip leading "ias:" from key (for mcrouter prefix-based routing)
+    key.erase(0, 4);
+  }
 
   size_t datasize;
   char* data = db->get(key.data(), key.size(), &datasize);
@@ -208,8 +212,7 @@ bool CacheOrBust::Worker::do_get(
     }
 
     std::string decoded_key(tokens[1]);
-    std::string test_http_prefix("http");
-    if (! key.compare(0, test_http_prefix.size(), test_http_prefix)) {
+    if (! key.compare(0, 4, "http")) {
       // Assume the string is base64 encoded if it doesn't start with "http"
       std::string temp_decoded = b64decode(key);
       // Super basic sanity check of decoded key.  Min length of http://a
