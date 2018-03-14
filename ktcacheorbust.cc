@@ -72,9 +72,9 @@ void CacheOrBust::configure(kt::TimedDB* dbary, size_t dbnum,
   }
 
   log(kt::ThreadedServer::Logger::SYSTEM, "CacheOrBust parameters:");
-  log(kt::ThreadedServer::Logger::SYSTEM, "CacheOrBust: host='%s'", _host);
+  log(kt::ThreadedServer::Logger::SYSTEM, "CacheOrBust: host='%s'", _host.c_str());
   log(kt::ThreadedServer::Logger::SYSTEM, "CacheOrBust: port='%d'", _port);
-  log(kt::ThreadedServer::Logger::SYSTEM, "CacheOrBust: url_prefix='%s'", _url_prefix);
+  log(kt::ThreadedServer::Logger::SYSTEM, "CacheOrBust: url_prefix='%s'", _url_prefix.c_str());
   log(kt::ThreadedServer::Logger::SYSTEM, "CacheOrBust: server_threads='%d'", _server_threads);
   log(kt::ThreadedServer::Logger::SYSTEM, "CacheOrBust: fetcher_threads='%d'", _fetcher_threads);
   log(kt::ThreadedServer::Logger::SYSTEM, "CacheOrBust: ttl='%d'", _ttl);
