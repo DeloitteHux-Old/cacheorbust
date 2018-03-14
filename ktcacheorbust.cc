@@ -41,13 +41,22 @@ void CacheOrBust::configure(kt::TimedDB* dbary, size_t dbnum,
     std::vector<std::string> fields;
     if (kc::strsplit(*it, '=', &fields) > 1) {
       const char* key = fields[0].c_str();
-      const char* value = fields[1].c_str();
+
+      // Join everything back together with =
+      std::string temp_value;
+      std::vector<std::string>::iterator fit = fields.begin();
+      std::vector<std::string>::iterator fitend = fields.end();
+      ++fit; // Ignore the first value
+      temp_value += *fit++;
+      for (; fit != fitend; ++fit) temp_value.append("=").append(*fit);
+
+      const char* value = temp_value.c_str();
       if (!std::strcmp(key, "host")) {
         _host = value;
       } else if (!std::strcmp(key, "port")) {
         _port = kc::atoi(value);
       } else if (!std::strcmp(key, "url_prefix")) {
-          _url_prefix = value;
+        _url_prefix = value;
       } else if (!std::strcmp(key, "server_threads")) {
         _server_threads = kc::atoi(value);
       } else if (!std::strcmp(key, "fetcher_threads")) {
