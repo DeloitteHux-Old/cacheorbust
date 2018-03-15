@@ -56,12 +56,15 @@ documentation](https://github.com/memcached/memcached/blob/master/doc/protocol.t
 The `get` command accepts 1 to 3 arguments:
 
 One argument (key is appended to `url_prefix` to populate the cache):
+
     get <key>
 
 Two arguments (the URL is used to populate the cache, the key can be anything):
+
     get <key> <url>
 
 Three arguments (NOTE: TTL override is only supported for the 3 argument version):
+
     get <key> <url> [ttl]
 
 The `key` is a unique key within the cache. If a value for the key already
@@ -83,6 +86,7 @@ distribution's package manager, and depends on libraries and headers from
 Kyoto Cabinet (http://fallabs.com/kyotocabinet/) and Kyoto Tycoon (http://fallabs.com/kyototycoon/).
 
 On CenOS 7 the following packages should be installed first:
+
     $ sudo yum install autoconf make automake gcc gcc-c++ libtool kyototycoon-devel kyotocabinet-devel
     NOTE: The kyoto*devel packages are in the Magnetic RPM repository
 
@@ -99,6 +103,7 @@ And then build the CacheOrBust shared object library with:
     $ [sudo] make install
 
 Sample run command:
+
     $ ktserver -ls -port 6000 -plsv ./.libs/ktcacheorbust-1.0.so \
       -plex "port=7000#ttl=86400#server_threads=16#fetcher_threads=32#keepalive=false" \
       '*#opts=l#bnum=1048583#ktcapsiz=40g#capsiz=40g#dfunit=8'
