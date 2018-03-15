@@ -45,7 +45,7 @@ namespace cob {
       uint32_t _fetcher_threads;
       uint32_t _ttl;
       bool _use_keepalive;
-      bool _log_keys = false;
+      bool _log_keys;
 
       OpCounts _opcounts;
 
@@ -63,6 +63,7 @@ namespace cob {
           _fetcher_threads(0),
           _ttl(0),
           _use_keepalive(true),
+          _log_keys(false),
           _serv(),
           _opcounts()
       {
