@@ -131,10 +131,6 @@ namespace cob {
               const std::vector<std::string>& tokens, kt::TimedDB* db);
           bool do_stats(kt::ThreadedServer* serv, kt::ThreadedServer::Session* sess,
               const std::vector<std::string>& tokens, kt::TimedDB* db);
-
-          std::string b64decode(const void* data, const size_t len);
-          std::string b64decode(const std::string& str64);
-
       };
   };
 };

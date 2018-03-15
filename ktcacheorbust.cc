@@ -197,6 +197,14 @@ bool CacheOrBust::Worker::do_get(
   } else {
     _opcounts[tid][MISS]++;
 
+    std::string url;
+    if (tokens.size() >= 3)
+      url = tokens[2];
+    else if (!_serv->_url_prefix.empty())
+      url = _serv->_url_prefix + key;
+    else
+      return sess->printf("CLIENT_ERROR missing URL\r\n");
+
     // add sentinel record, TTL 30s so that another
     // cache miss in 30s will cause another background
     // fetch to be enqueued
@@ -205,23 +213,6 @@ bool CacheOrBust::Worker::do_get(
       sess->printf("SERVER_ERROR could not set sentinel\r\n");
       return true;
     }
-
-    std::string decoded_key(tokens[1]);
-    if (! key.compare(0, 4, "http")) {
-      // Assume the string is base64 encoded if it doesn't start with "http"
-      std::string temp_decoded = b64decode(key);
-      // Super basic sanity check of decoded key.  Min length of http://a
-      if (temp_decoded.size() >= 8)
-        decoded_key = temp_decoded;
-    }
-
-    std::string url;
-    if (tokens.size() >= 3)
-      url = tokens[2];
-    else if (!_serv->_url_prefix.empty())
-      url = _serv->_url_prefix + decoded_key;
-    else
-      return sess->printf("CLIENT_ERROR missing URL\r\n");
 
     sess->printf("END\r\n");
 
@@ -288,48 +279,6 @@ bool CacheOrBust::Worker::do_stats(
 
   kc::strprintf(&result, "END\r\n");
   return !!(sess->send(result.data(), result.size()));
-}
-
-// From: https://stackoverflow.com/a/37109258
-static const int B64index [256] = { 0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
-  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
-  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, 62, 63, 62, 62, 63, 52, 53, 54, 55,
- 56, 57, 58, 59, 60, 61,  0,  0,  0,  0,  0,  0,  0,  0,  1,  2,  3,  4,  5,  6,
-  7,  8,  9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25,  0,
-  0,  0,  0, 63,  0, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40,
- 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51 };
-
-std::string CacheOrBust::Worker::b64decode(const void* data, const size_t len)
-{
-  unsigned char* p = (unsigned char*)data;
-  int pad = len > 0 && (len % 4 || p[len - 1] == '=');
-  const size_t L = ((len + 3) / 4 - pad) * 4;
-  std::string str(L / 4 * 3 + pad, '\0');
-
-  for (size_t i = 0, j = 0; i < L; i += 4)
-  {
-    int n = B64index[p[i]] << 18 | B64index[p[i + 1]] << 12 | B64index[p[i + 2]] << 6 | B64index[p[i + 3]];
-    str[j++] = n >> 16;
-    str[j++] = n >> 8 & 0xFF;
-    str[j++] = n & 0xFF;
-  }
-  if (pad)
-  {
-    int n = B64index[p[L]] << 18 | B64index[p[L + 1]] << 12;
-    str[str.size() - 1] = n >> 16;
-
-    if (len > L + 2 && p[L + 2] != '=')
-    {
-      n |= B64index[p[L + 2]] << 6;
-      str.push_back(n >> 8 & 0xFF);
-    }
-  }
-  return str;
-}
-
-std::string CacheOrBust::Worker::b64decode(const std::string& str64)
-{
-  return b64decode(str64.c_str(), str64.size());
 }
 
 void CacheOrBust::count_op(Op op)
