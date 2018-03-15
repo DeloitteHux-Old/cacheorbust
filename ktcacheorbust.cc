@@ -189,13 +189,7 @@ bool CacheOrBust::Worker::do_get(
   std::string key(tokens[1]);
 
   if (_serv->_log_keys) {
-    std::string escaped_key = key;
-    size_t pos = 0;
-    while((pos = escaped_key.find("%", pos)) != std::string::npos) {
-      escaped_key.replace(pos, 1, "%%");
-      pos += 2;
-    }
-    _serv->log(kt::ThreadedServer::Logger::INFO, "COB key request: %s", escaped_key.c_str());
+    _serv->log(kt::ThreadedServer::Logger::INFO, "COB key request: %s", key.c_str());
   }
 
   if (! _serv->_strip_prefix.empty() && ! key.compare(0, _serv->_strip_prefix.length(), _serv->_strip_prefix)) {
