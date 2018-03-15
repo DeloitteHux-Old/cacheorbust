@@ -28,6 +28,7 @@ option to `ktserver`:
 
 * `host`: sets the hostname for the listening socket [default: localhost]
 * `port`: sets the port number for the listening socket [default: 6080]
+* `url_prefix`: sets the URL prefix to prepend to the key (e.g. the IAS server endpoint)
 * `server_threads`: number of threads to handle memcached requests [default: 16]
 * `fetcher_threads`: number of threads to handle background HTTP fetches [default: 16]
 * `ttl`: number of seconds for which cached results are served before re-fetching
@@ -52,9 +53,16 @@ described in [the memcached protocol
 documentation](https://github.com/memcached/memcached/blob/master/doc/protocol.txt);
 `get` works differently by necessity. All other commands are not supported.
 
-The `get` command accepts 2 or 3 arguments:
+The `get` command accepts 1 to 3 arguments:
 
-    get key url [ttl]
+One argument (key is appended to `url_prefix` to populate the cache):
+    get <key>
+
+Two arguments (the URL is used to populate the cache, the key can be anything):
+    get <key> <url>
+
+Three arguments (NOTE: TTL override is only supported for the 3 argument version):
+    get <key> <url> [ttl]
 
 The `key` is a unique key within the cache. If a value for the key already
 exists, then the cached contents of the `url` is immediately returned; if
@@ -72,14 +80,25 @@ specified.
 
 CacheOrBust uses autotools, which can be installed through your
 distribution's package manager, and depends on libraries and headers from
-Kyoto Cabinet and Kyoto Tycoon, which can be found at http://fallabs.com/.
+Kyoto Cabinet (http://fallabs.com/kyotocabinet/) and Kyoto Tycoon (http://fallabs.com/kyototycoon/).
+
+On CenOS 7 the following packages should be installed first:
+    $ sudo yum install autoconf make automake gcc gcc-c++ libtool kyototycoon-devel kyotocabinet-devel
+    NOTE: The kyoto*devel packages are in the Magnetic RPM repository
 
 With dependencies installed, you can configure the build environment with:
 
-    $ autoreconf
-    $ ./configure
+    $ autoreconf --force --install
+    $ sed -i -e 's/ -g0 -O2//' -e 's/ -O0//' configure
+    $ sed -i -e 's/ -g0 -O2//' -e 's/ -O0//' Makefile.am
+    $ ./configure --prefix=/usr
 
 And then build the CacheOrBust shared object library with:
 
     $ make
     $ [sudo] make install
+
+Sample run command:
+    $ ktserver -ls -port 6000 -plsv ./.libs/ktcacheorbust-1.0.so \
+      -plex "port=7000#ttl=86400#server_threads=16#fetcher_threads=32#keepalive=false" \
+      '*#opts=l#bnum=1048583#ktcapsiz=40g#capsiz=40g#dfunit=8'
