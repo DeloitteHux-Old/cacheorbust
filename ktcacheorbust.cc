@@ -234,7 +234,7 @@ bool CacheOrBust::Worker::do_get(
       ttl = kc::atoi(tokens[3].c_str());
 
     FetchTask* fetch = new FetchTask(key, url, ttl);
-    _serv->_queue->add_task(fetch); // It would be nice to only add things that aren't already in the queue
+    _serv->_queue->add_task(fetch);
     _opcounts[tid][ENQUEUE]++;
   }
   return true;
