@@ -51,6 +51,8 @@ void CacheOrBust::configure(kt::TimedDB* dbary, size_t dbnum,
         _port = kc::atoi(value.c_str());
       } else if (!key.compare("url_prefix")) {
         _url_prefix = value;
+      } else if (!key.compare("strip_prefix")) {
+        _strip_prefix = value;
       } else if (!key.compare("server_threads")) {
         _server_threads = kc::atoi(value.c_str());
       } else if (!key.compare("fetcher_threads")) {
@@ -175,9 +177,9 @@ bool CacheOrBust::Worker::do_get(
     return sess->printf("CLIENT_ERROR extra data after TTL\r\n");
 
   std::string key(tokens[1]);
-  if (! key.compare(0, 4, "ias:")) {
-    // Strip leading "ias:" from key (for mcrouter prefix-based routing)
-    key.erase(0, 4);
+  if (! _serv->_strip_prefix.empty() && ! key.compare(0, _serv->_strip_prefix.length(), _serv->_strip_prefix)) {
+    // Strip leading prefix from key (for mcrouter prefix-routing)
+    key.erase(0, _serv->_strip_prefix.length());
   }
 
   size_t datasize;

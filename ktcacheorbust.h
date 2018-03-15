@@ -40,6 +40,7 @@ namespace cob {
       std::string _host;
       int32_t _port;
       std::string _url_prefix;
+      std::string _strip_prefix;
       uint32_t _server_threads;
       uint32_t _fetcher_threads;
       uint32_t _ttl;
