@@ -45,6 +45,7 @@ namespace cob {
       uint32_t _fetcher_threads;
       uint32_t _ttl;
       bool _use_keepalive;
+      bool _log_keys = false;
 
       OpCounts _opcounts;
 

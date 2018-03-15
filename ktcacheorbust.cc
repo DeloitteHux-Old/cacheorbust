@@ -67,6 +67,14 @@ void CacheOrBust::configure(kt::TimedDB* dbary, size_t dbnum,
         } else {
           log(kt::ThreadedServer::Logger::ERROR, "keepalive value must be 'true' or 'false' (assuming 'true')");
         }
+      } else if (!key.compare("log_keys")) {
+        if (!value.compare("true")) {
+          _log_keys = true;
+        } else if (!value.compare("false")) {
+          _log_keys = false;
+        } else {
+          log(kt::ThreadedServer::Logger::ERROR, "log_keys value must be 'true' or 'false' (assuming 'false')");
+        }
       } else {
         std::stringstream err;
         err << "CacheOrBust: unknown option '" << key << "'";
@@ -142,6 +150,7 @@ bool CacheOrBust::Worker::process(kt::ThreadedServer* serv, kt::ThreadedServer::
       success = do_flush(serv, sess, tokens, db);
     } else if (cmd == "version") {
       sess->printf("VERSION CacheOrBust/%s,KyotoTycoon/%s\r\n", PACKAGE_VERSION, kt::VERSION);
+      success = true;
     } else if (cmd == "quit") {
       success = false;
     } else {
@@ -178,6 +187,17 @@ bool CacheOrBust::Worker::do_get(
     return sess->printf("CLIENT_ERROR extra data after TTL\r\n");
 
   std::string key(tokens[1]);
+
+  if (_serv->_log_keys) {
+    std::string escaped_key = key;
+    size_t pos = 0;
+    while((pos = escaped_key.find("%", pos)) != std::string::npos) {
+      escaped_key.replace(pos, 1, "%%");
+      pos += 2;
+    }
+    _serv->log(kt::ThreadedServer::Logger::INFO, "COB key request: %s", escaped_key.c_str());
+  }
+
   if (! _serv->_strip_prefix.empty() && ! key.compare(0, _serv->_strip_prefix.length(), _serv->_strip_prefix)) {
     // Strip leading prefix from key (for mcrouter prefix-routing)
     key.erase(0, _serv->_strip_prefix.length());
@@ -205,8 +225,10 @@ bool CacheOrBust::Worker::do_get(
       url = tokens[2];
     else if (!_serv->_url_prefix.empty())
       url = _serv->_url_prefix + key;
-    else
-      return sess->printf("CLIENT_ERROR missing URL\r\n");
+    else {
+      sess->printf("CLIENT_ERROR missing URL\r\n");
+      return true;
+    }
 
     // add sentinel record, TTL 30s so that another
     // cache miss in 30s will cause another background
