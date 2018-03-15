@@ -143,6 +143,8 @@ bool CacheOrBust::Worker::process(kt::ThreadedServer* serv, kt::ThreadedServer::
       success = do_stats(serv, sess, tokens, db);
     } else if (cmd == "flush_all") {
       success = do_flush(serv, sess, tokens, db);
+    } else if (cmd == "version") {
+      sess->printf("VERSION CacheOrBust/%s,KyotoTycoon/%s\r\n", PACKAGE_VERSION, kt::VERSION);
     } else if (cmd == "quit") {
       success = false;
     } else {
