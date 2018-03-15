@@ -93,6 +93,7 @@ void CacheOrBust::configure(kt::TimedDB* dbary, size_t dbnum,
   log(kt::ThreadedServer::Logger::SYSTEM, "CacheOrBust: fetcher_threads='%d'", _fetcher_threads);
   log(kt::ThreadedServer::Logger::SYSTEM, "CacheOrBust: ttl='%d'", _ttl);
   log(kt::ThreadedServer::Logger::SYSTEM, "CacheOrBust: keepalive='%s'", _use_keepalive ? "true" : "false");
+  log(kt::ThreadedServer::Logger::SYSTEM, "CacheOrBust: log_keys='%s'", _log_keys ? "true" : "false");
 
 }
 

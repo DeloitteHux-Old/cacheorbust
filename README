@@ -29,12 +29,14 @@ option to `ktserver`:
 * `host`: sets the hostname for the listening socket [default: localhost]
 * `port`: sets the port number for the listening socket [default: 6080]
 * `url_prefix`: sets the URL prefix to prepend to the key (e.g. the IAS server endpoint)
+* `strip_prefix`: sets the URL prefix to prepend to the key (e.g. the IAS server endpoint)
 * `server_threads`: number of threads to handle memcached requests [default: 16]
 * `fetcher_threads`: number of threads to handle background HTTP fetches [default: 16]
 * `ttl`: number of seconds for which cached results are served before re-fetching
   from the upstream server [default: 3600]
 * `keepalive`: if "true", background HTTP requests will use HTTP Keep-Alive
    requests when requesting multiple URLs from the same host [default: false]
+* `log_keys`: if "true", log keys requested at the INFO level [default: false]
 
 A good starting point is:
 
@@ -85,7 +87,7 @@ CacheOrBust uses autotools, which can be installed through your
 distribution's package manager, and depends on libraries and headers from
 Kyoto Cabinet (http://fallabs.com/kyotocabinet/) and Kyoto Tycoon (http://fallabs.com/kyototycoon/).
 
-On CenOS 7 the following packages should be installed first:
+On CentOS 7 the following packages should be installed first:
 
     $ sudo yum install autoconf make automake gcc gcc-c++ libtool kyototycoon-devel kyotocabinet-devel
     NOTE: The kyoto*devel packages are in the Magnetic RPM repository
