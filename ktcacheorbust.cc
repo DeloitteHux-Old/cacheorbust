@@ -38,35 +38,29 @@ void CacheOrBust::configure(kt::TimedDB* dbary, size_t dbnum,
   std::vector<std::string>::iterator it = elems.begin();
   std::vector<std::string>::iterator itend = elems.end();
   while (it != itend) {
-    std::vector<std::string> fields;
-    if (kc::strsplit(*it, '=', &fields) > 1) {
-      const char* key = fields[0].c_str();
+    std::string param = *it;
+    std::size_t found = param.find("=");
 
-      // Join everything back together with =
-      std::string temp_value;
-      std::vector<std::string>::iterator fit = fields.begin();
-      std::vector<std::string>::iterator fitend = fields.end();
-      ++fit; // Ignore the first value
-      temp_value += *fit++;
-      for (; fit != fitend; ++fit) temp_value.append("=").append(*fit);
+    if (found!=std::string::npos) {
+      std::string key = param.substr(0, found);
+      std::string value = param.substr(found+1);
 
-      const char* value = temp_value.c_str();
-      if (!std::strcmp(key, "host")) {
+      if (!key.compare("host")) {
         _host = value;
-      } else if (!std::strcmp(key, "port")) {
-        _port = kc::atoi(value);
-      } else if (!std::strcmp(key, "url_prefix")) {
+      } else if (!key.compare("port")) {
+        _port = kc::atoi(value.c_str());
+      } else if (!key.compare("url_prefix")) {
         _url_prefix = value;
-      } else if (!std::strcmp(key, "server_threads")) {
-        _server_threads = kc::atoi(value);
-      } else if (!std::strcmp(key, "fetcher_threads")) {
-        _fetcher_threads = kc::atoi(value);
-      } else if (!std::strcmp(key, "ttl")) {
-        _ttl = kc::atoi(value);
-      } else if (!std::strcmp(key, "keepalive")) {
-        if (!std::strcmp(value, "true")) {
+      } else if (!key.compare("server_threads")) {
+        _server_threads = kc::atoi(value.c_str());
+      } else if (!key.compare("fetcher_threads")) {
+        _fetcher_threads = kc::atoi(value.c_str());
+      } else if (!key.compare("ttl")) {
+        _ttl = kc::atoi(value.c_str());
+      } else if (!key.compare("keepalive")) {
+        if (!value.compare("true")) {
           _use_keepalive = true;
-        } else if (!std::strcmp(value, "false")) {
+        } else if (!value.compare("false")) {
           _use_keepalive = false;
         } else {
           log(kt::ThreadedServer::Logger::ERROR, "keepalive value must be 'true' or 'false' (assuming 'true')");
