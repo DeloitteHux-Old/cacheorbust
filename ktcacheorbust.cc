@@ -201,14 +201,6 @@ bool CacheOrBust::Worker::do_get(
   } else {
     _opcounts[tid][MISS]++;
 
-    std::string url;
-    if (tokens.size() >= 3)
-      url = tokens[2];
-    else if (!_serv->_url_prefix.empty())
-      url = _serv->_url_prefix + decoded_key;
-    else
-      return sess->printf("CLIENT_ERROR missing URL\r\n");
-
     // add sentinel record, TTL 30s so that another
     // cache miss in 30s will cause another background
     // fetch to be enqueued
@@ -218,8 +210,6 @@ bool CacheOrBust::Worker::do_get(
       return true;
     }
 
-    sess->printf("END\r\n");
-
     std::string decoded_key(tokens[1]);
     if (! key.compare(0, 4, "http")) {
       // Assume the string is base64 encoded if it doesn't start with "http"
@@ -228,6 +218,16 @@ bool CacheOrBust::Worker::do_get(
       if (temp_decoded.size() >= 8)
         decoded_key = temp_decoded;
     }
+
+    std::string url;
+    if (tokens.size() >= 3)
+      url = tokens[2];
+    else if (!_serv->_url_prefix.empty())
+      url = _serv->_url_prefix + decoded_key;
+    else
+      return sess->printf("CLIENT_ERROR missing URL\r\n");
+
+    sess->printf("END\r\n");
 
     // NOTE: ttl is not supported for url_prefix mode, only here for backwards compatibility
     if (tokens.size() == 4)
