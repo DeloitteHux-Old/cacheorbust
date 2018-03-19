@@ -39,10 +39,13 @@ namespace cob {
 
       std::string _host;
       int32_t _port;
+      std::string _url_prefix;
+      std::string _strip_prefix;
       uint32_t _server_threads;
       uint32_t _fetcher_threads;
       uint32_t _ttl;
       bool _use_keepalive;
+      bool _log_keys;
 
       OpCounts _opcounts;
 
@@ -60,6 +63,7 @@ namespace cob {
           _fetcher_threads(0),
           _ttl(0),
           _use_keepalive(true),
+          _log_keys(false),
           _serv(),
           _opcounts()
       {

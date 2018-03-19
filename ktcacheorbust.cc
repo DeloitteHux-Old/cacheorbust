@@ -38,28 +38,43 @@ void CacheOrBust::configure(kt::TimedDB* dbary, size_t dbnum,
   std::vector<std::string>::iterator it = elems.begin();
   std::vector<std::string>::iterator itend = elems.end();
   while (it != itend) {
-    std::vector<std::string> fields;
-    if (kc::strsplit(*it, '=', &fields) > 1) {
-      const char* key = fields[0].c_str();
-      const char* value = fields[1].c_str();
-      if (!std::strcmp(key, "host")) {
+    std::string param = *it;
+    std::size_t found = param.find("=");
+
+    if (found!=std::string::npos) {
+      std::string key = param.substr(0, found);
+      std::string value = param.substr(found+1);
+
+      if (!key.compare("fetcher_threads")) {
+        _fetcher_threads = kc::atoi(value.c_str());
+      } else if (!key.compare("host")) {
         _host = value;
-      } else if (!std::strcmp(key, "port")) {
-        _port = kc::atoi(value);
-      } else if (!std::strcmp(key, "server_threads")) {
-        _server_threads = kc::atoi(value);
-      } else if (!std::strcmp(key, "fetcher_threads")) {
-        _fetcher_threads = kc::atoi(value);
-      } else if (!std::strcmp(key, "ttl")) {
-        _ttl = kc::atoi(value);
-      } else if (!std::strcmp(key, "keepalive")) {
-        if (!std::strcmp(value, "true")) {
+      } else if (!key.compare("keepalive")) {
+        if (!value.compare("true")) {
           _use_keepalive = true;
-        } else if (!std::strcmp(value, "false")) {
+        } else if (!value.compare("false")) {
           _use_keepalive = false;
         } else {
           log(kt::ThreadedServer::Logger::ERROR, "keepalive value must be 'true' or 'false' (assuming 'true')");
         }
+      } else if (!key.compare("log_keys")) {
+        if (!value.compare("true")) {
+          _log_keys = true;
+        } else if (!value.compare("false")) {
+          _log_keys = false;
+        } else {
+          log(kt::ThreadedServer::Logger::ERROR, "log_keys value must be 'true' or 'false' (assuming 'false')");
+        }
+      } else if (!key.compare("port")) {
+        _port = kc::atoi(value.c_str());
+      } else if (!key.compare("server_threads")) {
+        _server_threads = kc::atoi(value.c_str());
+      } else if (!key.compare("strip_prefix")) {
+        _strip_prefix = value;
+      } else if (!key.compare("ttl")) {
+        _ttl = kc::atoi(value.c_str());
+      } else if (!key.compare("url_prefix")) {
+        _url_prefix = value;
       } else {
         std::stringstream err;
         err << "CacheOrBust: unknown option '" << key << "'";
@@ -68,6 +83,18 @@ void CacheOrBust::configure(kt::TimedDB* dbary, size_t dbnum,
     }
     ++it;
   }
+
+  log(kt::ThreadedServer::Logger::SYSTEM, "CacheOrBust parameters:");
+  log(kt::ThreadedServer::Logger::SYSTEM, "CacheOrBust: fetcher_threads='%d'", _fetcher_threads);
+  log(kt::ThreadedServer::Logger::SYSTEM, "CacheOrBust: host='%s'", _host.c_str());
+  log(kt::ThreadedServer::Logger::SYSTEM, "CacheOrBust: keepalive='%s'", _use_keepalive ? "true" : "false");
+  log(kt::ThreadedServer::Logger::SYSTEM, "CacheOrBust: log_keys='%s'", _log_keys ? "true" : "false");
+  log(kt::ThreadedServer::Logger::SYSTEM, "CacheOrBust: port='%d'", _port);
+  log(kt::ThreadedServer::Logger::SYSTEM, "CacheOrBust: server_threads='%d'", _server_threads);
+  log(kt::ThreadedServer::Logger::SYSTEM, "CacheOrBust: strip_prefix='%s'", _strip_prefix.c_str());
+  log(kt::ThreadedServer::Logger::SYSTEM, "CacheOrBust: ttl='%d'", _ttl);
+  log(kt::ThreadedServer::Logger::SYSTEM, "CacheOrBust: url_prefix='%s'", _url_prefix.c_str());
+
 }
 
 bool CacheOrBust::start()
@@ -122,6 +149,9 @@ bool CacheOrBust::Worker::process(kt::ThreadedServer* serv, kt::ThreadedServer::
       success = do_stats(serv, sess, tokens, db);
     } else if (cmd == "flush_all") {
       success = do_flush(serv, sess, tokens, db);
+    } else if (cmd == "version") {
+      sess->printf("VERSION CacheOrBust/%s,KyotoTycoon/%s\r\n", PACKAGE_VERSION, kt::VERSION);
+      success = true;
     } else if (cmd == "quit") {
       success = false;
     } else {
@@ -154,15 +184,21 @@ bool CacheOrBust::Worker::do_get(
 
   if (tokens.size() < 2)
     return sess->printf("CLIENT_ERROR missing key\r\n");
-  if (tokens.size() < 3)
-    return sess->printf("CLIENT_ERROR missing URL\r\n");
   if (tokens.size() > 4)
     return sess->printf("CLIENT_ERROR extra data after TTL\r\n");
 
   std::string key(tokens[1]);
-  std::string url(tokens[2]);
-  if (tokens.size() == 4)
-    ttl = kc::atoi(tokens[3].c_str());
+
+  if (_serv->_log_keys) {
+    _serv->log(kt::ThreadedServer::Logger::INFO, "COB key request: %s", key.c_str());
+  }
+
+  if (! _serv->_strip_prefix.empty() && ! key.compare(0, _serv->_strip_prefix.length(), _serv->_strip_prefix)) {
+    // Strip leading prefix from key (for mcrouter Prefix Routing)
+    // If you set strip_prefix to "cob:" then "cob:key" and "key" will both match the same key.
+    // Prefix Routing is defined here: https://github.com/facebook/mcrouter/wiki/Prefix-routing-setup
+    key.erase(0, _serv->_strip_prefix.length());
+  }
 
   size_t datasize;
   char* data = db->get(key.data(), key.size(), &datasize);
@@ -170,7 +206,7 @@ bool CacheOrBust::Worker::do_get(
     const char flags = data[0];
     if (flags & FLAG_PENDING) {
       _opcounts[tid][MISS]++;
-      sess->printf("END\r\n", key.c_str());
+      sess->printf("END\r\n");
     } else {
       _opcounts[tid][HIT]++;
       sess->printf("VALUE %s 0 %llu\r\n", key.c_str(), datasize - 1);
@@ -180,7 +216,16 @@ bool CacheOrBust::Worker::do_get(
     delete[] data;
   } else {
     _opcounts[tid][MISS]++;
-    sess->printf("END\r\n", key.c_str());
+
+    std::string url;
+    if (tokens.size() >= 3)
+      url = tokens[2];
+    else if (!_serv->_url_prefix.empty())
+      url = _serv->_url_prefix + key;
+    else {
+      sess->printf("CLIENT_ERROR missing URL\r\n");
+      return true;
+    }
 
     // add sentinel record, TTL 30s so that another
     // cache miss in 30s will cause another background
@@ -190,6 +235,12 @@ bool CacheOrBust::Worker::do_get(
       sess->printf("SERVER_ERROR could not set sentinel\r\n");
       return true;
     }
+
+    sess->printf("END\r\n");
+
+    // NOTE: ttl is not supported for url_prefix mode, only here for backwards compatibility
+    if (tokens.size() == 4)
+      ttl = kc::atoi(tokens[3].c_str());
 
     FetchTask* fetch = new FetchTask(key, url, ttl);
     _serv->_queue->add_task(fetch);
