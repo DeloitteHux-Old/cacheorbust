@@ -45,20 +45,10 @@ void CacheOrBust::configure(kt::TimedDB* dbary, size_t dbnum,
       std::string key = param.substr(0, found);
       std::string value = param.substr(found+1);
 
-      if (!key.compare("host")) {
-        _host = value;
-      } else if (!key.compare("port")) {
-        _port = kc::atoi(value.c_str());
-      } else if (!key.compare("url_prefix")) {
-        _url_prefix = value;
-      } else if (!key.compare("strip_prefix")) {
-        _strip_prefix = value;
-      } else if (!key.compare("server_threads")) {
-        _server_threads = kc::atoi(value.c_str());
-      } else if (!key.compare("fetcher_threads")) {
+      if (!key.compare("fetcher_threads")) {
         _fetcher_threads = kc::atoi(value.c_str());
-      } else if (!key.compare("ttl")) {
-        _ttl = kc::atoi(value.c_str());
+      } else if (!key.compare("host")) {
+        _host = value;
       } else if (!key.compare("keepalive")) {
         if (!value.compare("true")) {
           _use_keepalive = true;
@@ -75,6 +65,16 @@ void CacheOrBust::configure(kt::TimedDB* dbary, size_t dbnum,
         } else {
           log(kt::ThreadedServer::Logger::ERROR, "log_keys value must be 'true' or 'false' (assuming 'false')");
         }
+      } else if (!key.compare("port")) {
+        _port = kc::atoi(value.c_str());
+      } else if (!key.compare("server_threads")) {
+        _server_threads = kc::atoi(value.c_str());
+      } else if (!key.compare("strip_prefix")) {
+        _strip_prefix = value;
+      } else if (!key.compare("ttl")) {
+        _ttl = kc::atoi(value.c_str());
+      } else if (!key.compare("url_prefix")) {
+        _url_prefix = value;
       } else {
         std::stringstream err;
         err << "CacheOrBust: unknown option '" << key << "'";
@@ -85,15 +85,15 @@ void CacheOrBust::configure(kt::TimedDB* dbary, size_t dbnum,
   }
 
   log(kt::ThreadedServer::Logger::SYSTEM, "CacheOrBust parameters:");
-  log(kt::ThreadedServer::Logger::SYSTEM, "CacheOrBust: host='%s'", _host.c_str());
-  log(kt::ThreadedServer::Logger::SYSTEM, "CacheOrBust: port='%d'", _port);
-  log(kt::ThreadedServer::Logger::SYSTEM, "CacheOrBust: url_prefix='%s'", _url_prefix.c_str());
-  log(kt::ThreadedServer::Logger::SYSTEM, "CacheOrBust: strip_prefix='%s'", _strip_prefix.c_str());
-  log(kt::ThreadedServer::Logger::SYSTEM, "CacheOrBust: server_threads='%d'", _server_threads);
   log(kt::ThreadedServer::Logger::SYSTEM, "CacheOrBust: fetcher_threads='%d'", _fetcher_threads);
-  log(kt::ThreadedServer::Logger::SYSTEM, "CacheOrBust: ttl='%d'", _ttl);
+  log(kt::ThreadedServer::Logger::SYSTEM, "CacheOrBust: host='%s'", _host.c_str());
   log(kt::ThreadedServer::Logger::SYSTEM, "CacheOrBust: keepalive='%s'", _use_keepalive ? "true" : "false");
   log(kt::ThreadedServer::Logger::SYSTEM, "CacheOrBust: log_keys='%s'", _log_keys ? "true" : "false");
+  log(kt::ThreadedServer::Logger::SYSTEM, "CacheOrBust: port='%d'", _port);
+  log(kt::ThreadedServer::Logger::SYSTEM, "CacheOrBust: server_threads='%d'", _server_threads);
+  log(kt::ThreadedServer::Logger::SYSTEM, "CacheOrBust: strip_prefix='%s'", _strip_prefix.c_str());
+  log(kt::ThreadedServer::Logger::SYSTEM, "CacheOrBust: ttl='%d'", _ttl);
+  log(kt::ThreadedServer::Logger::SYSTEM, "CacheOrBust: url_prefix='%s'", _url_prefix.c_str());
 
 }
 
@@ -194,7 +194,9 @@ bool CacheOrBust::Worker::do_get(
   }
 
   if (! _serv->_strip_prefix.empty() && ! key.compare(0, _serv->_strip_prefix.length(), _serv->_strip_prefix)) {
-    // Strip leading prefix from key (for mcrouter prefix-routing)
+    // Strip leading prefix from key (for mcrouter Prefix Routing)
+    // If you set strip_prefix to "cob:" then "cob:key" and "key" will both match the same key.
+    // Prefix Routing is defined here: https://github.com/facebook/mcrouter/wiki/Prefix-routing-setup
     key.erase(0, _serv->_strip_prefix.length());
   }
 
