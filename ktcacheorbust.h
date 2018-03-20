@@ -51,20 +51,22 @@ namespace cob {
 
     public:
       explicit CacheOrBust() :
-          _stime(kc::time()),
           _db(NULL),
           _logger(NULL),
           _logkinds(0),
+          _serv(),
           _worker(NULL),
           _queue(NULL),
+          _stime(kc::time()),
           _host(""),
           _port(0),
+          _url_prefix(""),
+          _strip_prefix(""),
           _server_threads(0),
           _fetcher_threads(0),
           _ttl(0),
           _use_keepalive(true),
           _log_keys(false),
-          _serv(),
           _opcounts()
       {
         for (int32_t j = 0; j < LAST_OP_; j++) {
@@ -106,9 +108,9 @@ namespace cob {
         CacheOrBust* _serv;
 
         // owned
-        OpCounts* _opcounts;
-
         int32_t _nthreads;
+
+        OpCounts* _opcounts;
 
         public:
           explicit Worker(CacheOrBust* serv, int32_t nthreads) :

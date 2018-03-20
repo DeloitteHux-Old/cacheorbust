@@ -32,10 +32,10 @@ namespace cob {
       FetchQueue(CacheOrBust* serv, kt::TimedDB* db, size_t nthreads, bool use_keepalive) :
         _serv(serv),
         _db(db),
-        _nthreads(nthreads),
+        _use_keepalive(use_keepalive),
         _clients(),
         _lock(),
-        _use_keepalive(use_keepalive)
+        _nthreads(nthreads)
       { }
 
       void start() { kc::TaskQueue::start(_nthreads); };
